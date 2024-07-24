@@ -1,5 +1,9 @@
 let scene, camera, renderer, ball, ground, obstacles = [];
 let jump = false, velocity = 0;
+let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+let prevTime = performance.now();
+let velocityVec = new THREE.Vector3();
+let direction = new THREE.Vector3();
 
 init();
 animate();
@@ -12,7 +16,7 @@ function init() {
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 10;
     camera.position.y = 5;
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, 1, 0);
 
     // Renderer
     renderer = new THREE.WebGLRenderer();
@@ -48,14 +52,41 @@ function init() {
         scene.add(obstacle);
     }
 
-    // Event Listener for Jump
+    // Event Listeners for Controls
     window.addEventListener('keydown', onKeyDown, false);
+    window.addEventListener('keyup', onKeyUp, false);
+    document.addEventListener('mousemove', onMouseMove, false);
+
+    // Lock pointer for mouse movement
+    document.body.requestPointerLock = document.body.requestPointerLock ||
+        document.body.mozRequestPointerLock ||
+        document.body.webkitRequestPointerLock;
+
+    document.body.onclick = function() {
+        document.body.requestPointerLock();
+    };
 }
 
 function animate() {
     requestAnimationFrame(animate);
 
-    // Ball physics
+    const time = performance.now();
+    const delta = (time - prevTime) / 1000;
+
+    velocityVec.x -= velocityVec.x * 10.0 * delta;
+    velocityVec.z -= velocityVec.z * 10.0 * delta;
+
+    direction.z = Number(moveForward) - Number(moveBackward);
+    direction.x = Number(moveRight) - Number(moveLeft);
+    direction.normalize();
+
+    if (moveForward || moveBackward) velocityVec.z -= direction.z * 400.0 * delta;
+    if (moveLeft || moveRight) velocityVec.x -= direction.x * 400.0 * delta;
+
+    ball.position.x += velocityVec.x * delta;
+    ball.position.z += velocityVec.z * delta;
+
+    // Ball physics for jumping
     if (jump) {
         velocity -= 0.05;
         ball.position.y += velocity;
@@ -66,12 +97,57 @@ function animate() {
         }
     }
 
+    camera.position.x = ball.position.x + 10 * Math.sin(camera.rotation.y);
+    camera.position.z = ball.position.z + 10 * Math.cos(camera.rotation.y);
+    camera.position.y = ball.position.y + 5;
+    camera.lookAt(ball.position);
+
     renderer.render(scene, camera);
+
+    prevTime = time;
 }
 
 function onKeyDown(event) {
-    if (event.code === 'Space' && !jump) {
-        jump = true;
-        velocity = 0.5;
+    switch (event.code) {
+        case 'KeyW':
+            moveForward = true;
+            break;
+        case 'KeyA':
+            moveLeft = true;
+            break;
+        case 'KeyS':
+            moveBackward = true;
+            break;
+        case 'KeyD':
+            moveRight = true;
+            break;
+        case 'Space':
+            if (!jump) {
+                jump = true;
+                velocity = 0.5;
+            }
+            break;
     }
+}
+
+function onKeyUp(event) {
+    switch (event.code) {
+        case 'KeyW':
+            moveForward = false;
+            break;
+        case 'KeyA':
+            moveLeft = false;
+            break;
+        case 'KeyS':
+            moveBackward = false;
+            break;
+        case 'KeyD':
+            moveRight = false;
+            break;
+    }
+}
+
+function onMouseMove(event) {
+    const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+    camera.rotation.y -= movementX * 0.002;
 }
