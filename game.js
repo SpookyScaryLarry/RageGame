@@ -1,11 +1,16 @@
 let scene, camera, renderer, sphere, ground, obstacles = [];
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let isJumping = false, velocity = new THREE.Vector3();
-let sphereBox, obstacleBoxes = [];
+let isJumping = false;
+let velocity = new THREE.Vector3();
 const speed = 10; // Movement speed of the sphere
 const gravity = -9.8; // Gravity effect
-const jumpForce = 25; // Increased jump force to clear obstacles
-const obstacleHeight = 3; // Height of obstacles
+const jumpImpulse = 15; // Impulse applied to start the jump
+const sensitivity = 0.002; // Mouse sensitivity for camera movement
+
+let controlsEnabled = false;
+
+// Physics variables
+let world, sphereBody, groundBody, obstacleBodies = [];
 
 init();
 animate();
@@ -35,12 +40,24 @@ function init() {
     directionalLight.position.set(5, 10, 7.5);
     scene.add(directionalLight);
 
+    // Initialize Cannon.js physics world
+    world = new CANNON.World();
+    world.gravity.set(0, -9.8, 0);
+
     // Create the sphere
     const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
     const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
     sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.position.y = 1;
     scene.add(sphere);
+
+    // Create Cannon.js sphere body
+    sphereBody = new CANNON.Body({
+        mass: 1,
+        position: new CANNON.Vec3(0, 1, 0),
+        shape: new CANNON.Sphere(1)
+    });
+    world.addBody(sphereBody);
 
     // Create the ground
     const groundGeometry = new THREE.PlaneGeometry(100, 100);
@@ -49,75 +66,80 @@ function init() {
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
 
+    // Create Cannon.js ground body
+    groundBody = new CANNON.Body({
+        position: new CANNON.Vec3(0, 0, 0),
+        type: CANNON.Body.STATIC
+    });
+    const groundShape = new CANNON.Plane();
+    groundBody.addShape(groundShape);
+    world.addBody(groundBody);
+
     // Create obstacles
     for (let i = 0; i < 10; i++) {
-        const obstacleGeometry = new THREE.BoxGeometry(2, obstacleHeight, 2);
+        const obstacleGeometry = new THREE.BoxGeometry(2, 3, 2);
         const obstacleMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
         const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-        obstacle.position.set(Math.random() * 40 - 20, obstacleHeight / 2, Math.random() * 40 - 20);
+        obstacle.position.set(Math.random() * 40 - 20, 1.5, Math.random() * 40 - 20);
         obstacles.push(obstacle);
         scene.add(obstacle);
-    }
 
-    // Create bounding boxes for collision detection
-    sphereBox = new THREE.Box3().setFromObject(sphere);
-    obstacles.forEach(obstacle => {
-        obstacleBoxes.push(new THREE.Box3().setFromObject(obstacle));
-    });
+        // Create Cannon.js obstacle body
+        const obstacleBody = new CANNON.Body({
+            position: new CANNON.Vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
+            mass: 1
+        });
+        const obstacleShape = new CANNON.Box(new CANNON.Vec3(1, 1.5, 1));
+        obstacleBody.addShape(obstacleShape);
+        world.addBody(obstacleBody);
+        obstacleBodies.push(obstacleBody);
+    }
 
     // Event listeners for controls
     window.addEventListener('keydown', onKeyDown, false);
     window.addEventListener('keyup', onKeyUp, false);
+    document.getElementById('lockButton').addEventListener('click', lockMouse, false);
+    document.addEventListener('mousemove', onMouseMove, false);
 }
 
 function animate() {
     requestAnimationFrame(animate);
 
+    // Step the physics world
+    world.step(1 / 60);
+
+    // Update sphere position
+    sphere.position.copy(sphereBody.position);
+    sphere.quaternion.copy(sphereBody.quaternion);
+
+    // Update obstacle positions
+    obstacles.forEach((obstacle, index) => {
+        obstacle.position.copy(obstacleBodies[index].position);
+        obstacle.quaternion.copy(obstacleBodies[index].quaternion);
+    });
+
+    // Handle movement
     const delta = 0.016; // 60 FPS
     const moveDistance = speed * delta;
 
-    // Handle movement
-    if (moveForward) sphere.position.z -= moveDistance;
-    if (moveBackward) sphere.position.z += moveDistance;
-    if (moveLeft) sphere.position.x -= moveDistance;
-    if (moveRight) sphere.position.x += moveDistance;
+    if (moveForward) sphereBody.position.z -= moveDistance;
+    if (moveBackward) sphereBody.position.z += moveDistance;
+    if (moveLeft) sphereBody.position.x -= moveDistance;
+    if (moveRight) sphereBody.position.x += moveDistance;
 
-    // Apply gravity and handle jumping
-    if (!isJumping) {
-        velocity.y += gravity * delta;
-    } else {
-        velocity.y = jumpForce; // Apply increased jump force
+    // Apply jump impulse
+    if (isJumping) {
+        sphereBody.velocity.y = jumpImpulse;
         isJumping = false;
     }
-    sphere.position.y += velocity.y * delta;
-
-    // Collision with the ground
-    if (sphere.position.y <= 1) {
-        sphere.position.y = 1;
-        velocity.y = 0;
-        isJumping = false;
-    }
-
-    // Update sphere bounding box
-    sphereBox.setFromObject(sphere);
-
-    // Check collisions with obstacles
-    obstacles.forEach((obstacle, index) => {
-        const obstacleBox = new THREE.Box3().setFromObject(obstacle);
-        if (sphereBox.intersectsBox(obstacleBox)) {
-            // Handle collision
-            if (moveForward) sphere.position.z += moveDistance;
-            if (moveBackward) sphere.position.z -= moveDistance;
-            if (moveLeft) sphere.position.x += moveDistance;
-            if (moveRight) sphere.position.x -= moveDistance;
-        }
-    });
 
     // Update the camera position to follow the sphere
-    camera.position.x = sphere.position.x;
-    camera.position.z = sphere.position.z + 20; // Fixed distance behind
-    camera.position.y = sphere.position.y + 10; // Fixed height
-    camera.lookAt(sphere.position);
+    if (controlsEnabled) {
+        camera.position.x = sphere.position.x;
+        camera.position.z = sphere.position.z + 20; // Fixed distance behind
+        camera.position.y = sphere.position.y + 10; // Fixed height
+        camera.lookAt(sphere.position);
+    }
 
     // Render the scene
     renderer.render(scene, camera);
@@ -138,7 +160,7 @@ function onKeyDown(event) {
             moveRight = true;
             break;
         case 'Space':
-            if (sphere.position.y <= 1) { // Can only jump if on the ground
+            if (sphereBody.position.y <= 1 && !isJumping) { // Can only jump if on the ground
                 isJumping = true;
             }
             break;
@@ -161,6 +183,28 @@ function onKeyUp(event) {
             break;
     }
 }
+
+function onMouseMove(event) {
+    if (controlsEnabled) {
+        const x = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+        const y = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+
+        // Update camera rotation based on mouse movement
+        camera.rotation.y -= x * sensitivity;
+        camera.rotation.x -= y * sensitivity;
+
+        // Clamp camera rotation to prevent flipping
+        camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+    }
+}
+
+function lockMouse() {
+    document.body.requestPointerLock();
+}
+
+document.addEventListener('pointerlockchange', () => {
+    controlsEnabled = document.pointerLockElement === document.body;
+});
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
