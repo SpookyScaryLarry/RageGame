@@ -23,7 +23,7 @@
             document.body.appendChild(renderer.domElement);
 
             // Ball
-            const geometry = new THREE.SphereGeometry(1, 32 32);
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
             const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
             ball = new THREE.Mesh(geometry, material);
             scene.add(ball);
@@ -46,8 +46,8 @@
             window.addEventListener('mousemove', (e) => {
                 const x = (e.clientX / window.innerWidth) * 2 - 1;
                 const y = - (e.clientY / window.innerHeight) * 2 + 1;
-                camera.position.x = x * 100;
-                camera.position.y = y * 100;
+                camera.position.x = x * 10;
+                camera.position.y = y * 10;
                 camera.lookAt(scene.position);
             });
 
@@ -67,14 +67,13 @@
             // Ball jumping
             if (keys['Space']) {
                 ball.position.y += speed;
-                setTimeout(() => ball.position.y -= speed, 1000);
+                setTimeout(() => ball.position.y -= speed, 500);
             }
 
             // Collision detection
             obstacles.forEach(obstacle => {
                 if (ball.position.distanceTo(obstacle.position) < 2) {
-                    console.log;('Collision detected!');
-    
+                    console.log('Collision detected!');
                 }
             });
 
