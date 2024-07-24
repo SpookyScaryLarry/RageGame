@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Ball Game with Physics</title>
+    <title>3D Ball Game</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -11,12 +11,11 @@
 </head>
 <body>
     <script src="https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cannon-es@0.23.0/dist/cannon-es.min.js"></script>
     <script>
         let scene, camera, renderer, ball, obstacles = [];
-        let world, ballBody;
-        let keys = {};
-        let mouse = { x: 0, y: 0 };
+        let controls;
+        const keys = {};
+        const mouse = { x: 0, y: 0 };
 
         function init() {
             scene = new THREE.Scene();
@@ -25,25 +24,12 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Initialize Cannon.js physics world
-            world = new CANNON.World();
-            world.gravity.set(0, -9.82, 0); // gravity
-
             // Ball
-            const ballGeometry = new THREE.SphereGeometry(1, 32, 32);
-            const ballMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            ball = new THREE.Mesh(ballGeometry, ballMaterial);
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            ball = new THREE.Mesh(geometry, material);
             scene.add(ball);
-
-            const ballShape = new CANNON.Sphere(1);
-            ballBody = new CANNON.Body({
-                mass: 1,
-                position: new CANNON.Vec3(0, 1, 0),
-                linearDamping: 0.1,
-                angularDamping: 0.1
-            });
-            ballBody.addShape(ballShape);
-            world.addBody(ballBody);
+            ball.position.y = 1;
 
             // Obstacles
             const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
@@ -52,20 +38,13 @@
                 const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
                 obstacle.position.set(Math.random() * 10 - 5, 1, Math.random() * 10 - 5);
                 scene.add(obstacle);
-
-                const obstacleShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1));
-                const obstacleBody = new CANNON.Body({
-                    position: new CANNON.Vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
-                    type: CANNON.Body.STATIC
-                });
-                obstacleBody.addShape(obstacleShape);
-                world.addBody(obstacleBody);
-                obstacles.push({ mesh: obstacle, body: obstacleBody });
+                obstacles.push(obstacle);
             }
 
             camera.position.set(0, 5, 10);
             camera.lookAt(scene.position);
 
+            // Mouse lock
             renderer.domElement.addEventListener('click', () => {
                 renderer.domElement.requestPointerLock();
             });
@@ -87,34 +66,30 @@
             requestAnimationFrame(animate);
 
             // Ball movement
-            const speed = 10;
-            if (keys['KeyW']) ballBody.position.z -= speed * 0.1;
-            if (keys['KeyS']) ballBody.position.z += speed * 0.1;
-            if (keys['KeyA']) ballBody.position.x -= speed * 0.1;
-            if (keys['KeyD']) ballBody.position.x += speed * 0.1;
+            const speed = 0.1;
+            if (keys['KeyW']) ball.position.z -= speed;
+            if (keys['KeyS']) ball.position.z += speed;
+            if (keys['KeyA']) ball.position.x -= speed;
+            if (keys['KeyD']) ball.position.x += speed;
 
             // Ball jumping
-            if (keys['Space'] && ballBody.position.y < 1.1) {
-                ballBody.velocity.y = 10;
-                setTimeout(() => ballBody.velocity.y = 0, 500);
+            if (keys['Space']) {
+                ball.position.y += speed;
+                setTimeout(() => ball.position.y -= speed, 500);
             }
-
-            // Update physics world
-            world.step(1/60);
-
-            // Sync Three.js mesh with Cannon.js body
-            ball.position.copy(ballBody.position);
-            ball.quaternion.copy(ballBody.quaternion);
-
-            obstacles.forEach(({ mesh, body }) => {
-                mesh.position.copy(body.position);
-                mesh.quaternion.copy(body.quaternion);
-            });
 
             // Camera follows ball
             camera.position.x = ball.position.x;
             camera.position.z = ball.position.z + 10;
             camera.position.y = 5;
+
+        // Collision detection
+        obstacles.forEach(obstacle => {
+            const distance = ball.position.distanceTo(obstacle.position);
+            if (distance < 2) {
+                window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+            }
+        });
 
             renderer.render(scene, camera);
         }
