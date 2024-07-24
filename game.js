@@ -6,6 +6,7 @@ let velocityVec = new THREE.Vector3();
 let direction = new THREE.Vector3();
 let ballBox, obstacleBoxes = [];
 let cameraRotation = new THREE.Euler(); // To store camera rotation
+const speed = 10; // Speed of camera movement
 
 init();
 animate();
@@ -19,6 +20,7 @@ function init() {
     camera.position.set(0, 5, 10);
     cameraRotation.set(0, 0, 0);
     camera.rotation.copy(cameraRotation);
+    scene.add(camera);
 
     // Renderer
     renderer = new THREE.WebGLRenderer();
@@ -28,10 +30,13 @@ function init() {
     // Handle window resize
     window.addEventListener('resize', onWindowResize, false);
 
-    // Light
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(5, 10, 7.5);
-    scene.add(light);
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040); // Ambient light
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // Directional light
+    directionalLight.position.set(5, 10, 7.5);
+    scene.add(directionalLight);
 
     // Ball
     const geometry = new THREE.SphereGeometry(1, 32, 32);
