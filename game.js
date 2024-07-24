@@ -2,9 +2,9 @@ let scene, camera, renderer, sphere, ground, obstacles = [];
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 let jump = false, isJumping = false, velocity = new THREE.Vector3();
 let sphereBox, obstacleBoxes = [];
-const speed = 5; // Movement speed of the sphere
+const speed = 10; // Increased movement speed of the sphere
 const gravity = -9.8; // Gravity effect
-const jumpForce = 5; // Initial force applied for jumping
+const jumpForce = 15; // Increased jump force
 
 init();
 animate();
@@ -85,7 +85,7 @@ function animate() {
     if (!isJumping) {
         velocity.y += gravity * delta;
     } else {
-        velocity.y = jumpForce; // Apply jump force
+        velocity.y = jumpForce; // Apply increased jump force
         isJumping = false;
     }
     sphere.position.y += velocity.y * delta;
