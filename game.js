@@ -1,10 +1,11 @@
 let scene, camera, renderer, sphere, ground, obstacles = [];
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let jump = false, velocity = new THREE.Vector3();
+let isJumping = false, velocity = new THREE.Vector3();
 let sphereBox, obstacleBoxes = [];
-const speed = 5; // Movement speed of the sphere
+const speed = 10; // Movement speed of the sphere
 const gravity = -9.8; // Gravity effect
-const jumpForce = 5; // Initial force applied for jumping
+const jumpForce = 25; // Increased jump force to clear obstacles
+const obstacleHeight = 3; // Height of obstacles
 
 init();
 animate();
@@ -50,10 +51,10 @@ function init() {
 
     // Create obstacles
     for (let i = 0; i < 10; i++) {
-        const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
+        const obstacleGeometry = new THREE.BoxGeometry(2, obstacleHeight, 2);
         const obstacleMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
         const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-        obstacle.position.set(Math.random() * 40 - 20, 1, Math.random() * 40 - 20);
+        obstacle.position.set(Math.random() * 40 - 20, obstacleHeight / 2, Math.random() * 40 - 20);
         obstacles.push(obstacle);
         scene.add(obstacle);
     }
@@ -82,11 +83,11 @@ function animate() {
     if (moveRight) sphere.position.x += moveDistance;
 
     // Apply gravity and handle jumping
-    if (!jump) {
+    if (!isJumping) {
         velocity.y += gravity * delta;
     } else {
-        velocity.y = jumpForce; // Apply jump force
-        jump = false;
+        velocity.y = jumpForce; // Apply increased jump force
+        isJumping = false;
     }
     sphere.position.y += velocity.y * delta;
 
@@ -94,6 +95,7 @@ function animate() {
     if (sphere.position.y <= 1) {
         sphere.position.y = 1;
         velocity.y = 0;
+        isJumping = false;
     }
 
     // Update sphere bounding box
@@ -104,7 +106,6 @@ function animate() {
         const obstacleBox = new THREE.Box3().setFromObject(obstacle);
         if (sphereBox.intersectsBox(obstacleBox)) {
             // Handle collision
-            // Simple collision response: revert movement
             if (moveForward) sphere.position.z += moveDistance;
             if (moveBackward) sphere.position.z -= moveDistance;
             if (moveLeft) sphere.position.x += moveDistance;
@@ -138,7 +139,7 @@ function onKeyDown(event) {
             break;
         case 'Space':
             if (sphere.position.y <= 1) { // Can only jump if on the ground
-                jump = true;
+                isJumping = true;
             }
             break;
     }
