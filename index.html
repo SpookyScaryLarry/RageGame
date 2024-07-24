@@ -46,8 +46,8 @@
             window.addEventListener('mousemove', (e) => {
                 const x = (e.clientX / window.innerWidth) * 2 - 1;
                 const y = - (e.clientY / window.innerHeight) * 2 + 1;
-                camera.position.x = x * 10;
-                camera.position.y = y * 10;
+                camera.position.x = x * 100;
+                camera.position.y = y * 100;
                 camera.lookAt(scene.position);
             });
 
