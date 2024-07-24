@@ -23,7 +23,7 @@
             document.body.appendChild(renderer.domElement);
 
             // Ball
-            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            const geometry = new THREE.SphereGeometry(1, 20, 20);
             const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
             ball = new THREE.Mesh(geometry, material);
             scene.add(ball);
@@ -34,7 +34,7 @@
             const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
             for (let i = 0; i < 5; i++) {
                 const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-                obstacle.position.set(Math.random() * 10 - 5, 1, Math.random() * 100 - 5);
+                obstacle.position.set(Math.random() * 10 - 5, 1, Math.random() * 10 - 5);
                 scene.add(obstacle);
                 obstacles.push(obstacle);
             }
