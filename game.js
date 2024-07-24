@@ -6,7 +6,6 @@ let velocityVec = new THREE.Vector3();
 let direction = new THREE.Vector3();
 let ballBox, obstacleBoxes = [];
 let cameraRotation = new THREE.Euler(); // To store camera rotation
-const speed = 10; // Speed of camera movement
 
 init();
 animate();
@@ -203,9 +202,14 @@ function onKeyUp(event) {
 function onMouseMove(event) {
     const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
     const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+
+    // Rotate camera around the ball
     cameraRotation.y -= movementX * 0.002;
     cameraRotation.x -= movementY * 0.002;
     cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotation.x)); // Clamp vertical rotation
+
+    // Update camera rotation
+    camera.rotation.copy(cameraRotation);
 }
 
 function onWindowResize() {
