@@ -1,10 +1,11 @@
 let scene, camera, renderer, sphere, ground, obstacles = [];
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let jump = false, isJumping = false, velocity = new THREE.Vector3();
+let isJumping = false;
+let velocity = new THREE.Vector3();
 let sphereBox, obstacleBoxes = [];
-const speed = 10; // Increased movement speed of the sphere
+const speed = 10; // Movement speed of the sphere
 const gravity = -9.8; // Gravity effect
-const jumpForce = 15; // Increased jump force
+const jumpImpulse = 15; // Impulse applied to start the jump
 
 init();
 animate();
@@ -50,10 +51,10 @@ function init() {
 
     // Create obstacles
     for (let i = 0; i < 10; i++) {
-        const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
+        const obstacleGeometry = new THREE.BoxGeometry(2, 3, 2);
         const obstacleMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
         const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-        obstacle.position.set(Math.random() * 40 - 20, 1, Math.random() * 40 - 20);
+        obstacle.position.set(Math.random() * 40 - 20, 1.5, Math.random() * 40 - 20);
         obstacles.push(obstacle);
         scene.add(obstacle);
     }
@@ -82,20 +83,14 @@ function animate() {
     if (moveRight) sphere.position.x += moveDistance;
 
     // Apply gravity and handle jumping
-    if (!isJumping) {
-        velocity.y += gravity * delta;
+    if (sphere.position.y > 1) {
+        velocity.y += gravity * delta; // Apply gravity when in the air
     } else {
-        velocity.y = jumpForce; // Apply increased jump force
-        isJumping = false;
-    }
-    sphere.position.y += velocity.y * delta;
-
-    // Collision with the ground
-    if (sphere.position.y <= 1) {
         sphere.position.y = 1;
         velocity.y = 0;
         isJumping = false;
     }
+    sphere.position.y += velocity.y * delta;
 
     // Update sphere bounding box
     sphereBox.setFromObject(sphere);
@@ -137,8 +132,9 @@ function onKeyDown(event) {
             moveRight = true;
             break;
         case 'Space':
-            if (sphere.position.y <= 1) { // Can only jump if on the ground
+            if (sphere.position.y <= 1 && !isJumping) { // Can only jump if on the ground
                 isJumping = true;
+                velocity.y = jumpImpulse; // Apply initial jump impulse
             }
             break;
     }
