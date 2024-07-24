@@ -1,14 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>You shall suffer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Ball Game</title>
     <style>
-        body { margin: 0; background-color: #96d4cf}
+        body { margin: 0; }
         canvas { display: block; }
     </style>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="game.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, ball, obstacles = [];
+        const keys = {};
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Ball
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            ball = new THREE.Mesh(geometry, material);
+            scene.add(ball);
+            ball.position.y = 1;
+
+            // Obstacles
+            const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
+            const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+            for (let i = 0; i < 5; i++) {
+                const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
+                obstacle.position.set(Math.random() * 10 - 5, 1, Math.random() * 10 - 5);
+                scene.add(obstacle);
+                obstacles.push(obstacle);
+            }
+
+            camera.position.z = 10;
+
+            window.addEventListener('keydown', (e) => keys[e.code] = true);
+            window.addEventListener('keyup', (e) => keys[e.code] = false);
+            window.addEventListener('mousemove', (e) => {
+                const x = (e.clientX / window.innerWidth) * 2 - 1;
+                const y = - (e.clientY / window.innerHeight) * 2 + 1;
+                camera.position.x = x * 10;
+                camera.position.y = y * 10;
+                camera.lookAt(scene.position);
+            });
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Ball movement
+            const speed = 0.1;
+            if (keys['KeyW']) ball.position.z -= speed;
+            if (keys['KeyS']) ball.position.z += speed;
+            if (keys['KeyA']) ball.position.x -= speed;
+            if (keys['KeyD']) ball.position.x += speed;
+
+            // Ball jumping
+            if (keys['Space']) {
+                ball.position.y += speed;
+                setTimeout(() => ball.position.y -= speed, 500);
+            }
+
+            // Collision detection
+            obstacles.forEach(obstacle => {
+                if (ball.position.distanceTo(obstacle.position) < 2) {
+                    console.log('Collision detected!');
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
 </body>
 </html>
