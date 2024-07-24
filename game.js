@@ -4,6 +4,7 @@ let moveForward = false, moveBackward = false, moveLeft = false, moveRight = fal
 let prevTime = performance.now();
 let velocityVec = new THREE.Vector3();
 let direction = new THREE.Vector3();
+let ballBox, obstacleBoxes = [];
 
 init();
 animate();
@@ -55,6 +56,12 @@ function init() {
         scene.add(obstacle);
     }
 
+    // Bounding Boxes for Collision Detection
+    ballBox = new THREE.Box3().setFromObject(ball);
+    obstacles.forEach(obstacle => {
+        obstacleBoxes.push(new THREE.Box3().setFromObject(obstacle));
+    });
+
     // Event Listeners for Controls
     window.addEventListener('keydown', onKeyDown, false);
     window.addEventListener('keyup', onKeyUp, false);
@@ -83,11 +90,23 @@ function animate() {
     direction.x = Number(moveRight) - Number(moveLeft);
     direction.normalize();
 
-    if (moveForward || moveBackward) velocityVec.z -= direction.z * 400.0 * delta;
-    if (moveLeft || moveRight) velocityVec.x -= direction.x * 400.0 * delta;
+    if (moveForward || moveBackward) velocityVec.z -= direction.z * 200.0 * delta; // Reduced speed
+    if (moveLeft || moveRight) velocityVec.x += direction.x * 200.0 * delta; // Reduced speed
 
     ball.position.x += velocityVec.x * delta;
     ball.position.z += velocityVec.z * delta;
+
+    // Update bounding box
+    ballBox.setFromObject(ball);
+
+    // Check collisions with obstacles
+    for (let i = 0; i < obstacleBoxes.length; i++) {
+        if (ballBox.intersectsBox(obstacleBoxes[i])) {
+            // Handle collision: simple example is to stop movement
+            velocityVec.x = 0;
+            velocityVec.z = 0;
+        }
+    }
 
     // Ball physics for jumping
     if (jump) {
@@ -100,9 +119,10 @@ function animate() {
         }
     }
 
-    camera.position.x = ball.position.x + 10 * Math.sin(camera.rotation.y);
-    camera.position.z = ball.position.z + 10 * Math.cos(camera.rotation.y);
-    camera.position.y = ball.position.y + 5;
+    // Camera remains in a fixed position
+    camera.position.x = 0;
+    camera.position.y = 5;
+    camera.position.z = 10;
     camera.lookAt(ball.position);
 
     renderer.render(scene, camera);
@@ -116,13 +136,13 @@ function onKeyDown(event) {
             moveForward = true;
             break;
         case 'KeyA':
-            moveLeft = true;
+            moveRight = true; // Reversed
             break;
         case 'KeyS':
             moveBackward = true;
             break;
         case 'KeyD':
-            moveRight = true;
+            moveLeft = true; // Reversed
             break;
         case 'Space':
             if (!jump) {
@@ -139,13 +159,13 @@ function onKeyUp(event) {
             moveForward = false;
             break;
         case 'KeyA':
-            moveLeft = false;
+            moveRight = false; // Reversed
             break;
         case 'KeyS':
             moveBackward = false;
             break;
         case 'KeyD':
-            moveRight = false;
+            moveLeft = false; // Reversed
             break;
     }
 }
