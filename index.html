@@ -13,9 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js"></script>
     <script>
         let scene, camera, renderer, ball, obstacles = [];
-        let controls;
         const keys = {};
-        const mouse = { x: 0, y: 0 };
 
         function init() {
             scene = new THREE.Scene();
@@ -41,23 +39,17 @@
                 obstacles.push(obstacle);
             }
 
-            camera.position.set(0, 5, 10);
-            camera.lookAt(scene.position);
-
-            // Mouse lock
-            renderer.domElement.addEventListener('click', () => {
-                renderer.domElement.requestPointerLock();
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (document.pointerLockElement === renderer.domElement) {
-                    mouse.x += e.movementX * 0.1;
-                    mouse.y += e.movementY * 0.1;
-                }
-            });
+            camera.position.z = 10;
 
             window.addEventListener('keydown', (e) => keys[e.code] = true);
             window.addEventListener('keyup', (e) => keys[e.code] = false);
+            window.addEventListener('mousemove', (e) => {
+                const x = (e.clientX / window.innerWidth) * 2 - 1;
+                const y = - (e.clientY / window.innerHeight) * 2 + 1;
+                camera.position.x = x * 10;
+                camera.position.y = y * 10;
+                camera.lookAt(scene.position);
+            });
 
             animate();
         }
@@ -78,18 +70,12 @@
                 setTimeout(() => ball.position.y -= speed, 500);
             }
 
-            // Camera follows ball
-            camera.position.x = ball.position.x;
-            camera.position.z = ball.position.z + 10;
-            camera.position.y = 5;
-
-        // Collision detection
-        obstacles.forEach(obstacle => {
-            const distance = ball.position.distanceTo(obstacle.position);
-            if (distance < 2) {
-                window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-            }
-        });
+            // Collision detection
+            obstacles.forEach(obstacle => {
+                if (ball.position.distanceTo(obstacle.position) < 2) {
+                    window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';('Collision detected!');
+                }
+            });
 
             renderer.render(scene, camera);
         }
