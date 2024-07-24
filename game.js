@@ -6,6 +6,7 @@ let velocityVec = new THREE.Vector3();
 let direction = new THREE.Vector3();
 let ballBox, obstacleBoxes = [];
 let cameraRotation = new THREE.Euler(); // To store camera rotation
+const speed = 10; // Speed of camera movement
 
 init();
 animate();
@@ -85,15 +86,34 @@ function animate() {
     const delta = (time - prevTime) / 1000;
 
     // Update camera position based on input
-    const speed = 10 * delta;
     const cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
     const cameraRight = new THREE.Vector3().crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0));
 
-    if (moveForward) camera.position.addScaledVector(cameraDirection, speed);
-    if (moveBackward) camera.position.addScaledVector(cameraDirection.negate(), speed);
-    if (moveLeft) camera.position.addScaledVector(cameraRight.negate(), speed);
-    if (moveRight) camera.position.addScaledVector(cameraRight, speed);
+    const moveDistance = speed * delta;
+
+    if (moveForward) {
+        camera.position.addScaledVector(cameraDirection, moveDistance);
+    }
+    if (moveBackward) {
+        camera.position.addScaledVector(cameraDirection.negate(), moveDistance);
+    }
+    if (moveLeft) {
+        camera.position.addScaledVector(cameraRight.negate(), moveDistance);
+    }
+    if (moveRight) {
+        camera.position.addScaledVector(cameraRight, moveDistance);
+    }
+
+    // Prevent the camera from passing through obstacles
+    const cameraBox = new THREE.Box3().setFromCenterAndSize(camera.position, new THREE.Vector3(1, 1, 1));
+    obstacles.forEach(obstacle => {
+        const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+        if (cameraBox.intersectsBox(obstacleBox)) {
+            // Move the camera back to its previous position
+            camera.position.sub(cameraDirection.clone().multiplyScalar(moveDistance));
+        }
+    });
 
     // Update ball position and collision
     velocityVec.x -= velocityVec.x * 10.0 * delta;
