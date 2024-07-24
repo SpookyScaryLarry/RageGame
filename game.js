@@ -3,9 +3,9 @@ let moveForward = false, moveBackward = false, moveLeft = false, moveRight = fal
 let isJumping = false;
 let velocity = new THREE.Vector3();
 let sphereBox, obstacleBoxes = [];
-const speed = 10; // Movement speed of the sphere
+const speed = 50; // Movement speed of the sphere
 const gravity = -9.8; // Gravity effect
-const jumpImpulse = 15; // Impulse applied to start the jump
+const jumpImpulse = 45; // Impulse applied to start the jump
 
 init();
 animate();
@@ -84,13 +84,13 @@ function animate() {
 
     // Apply gravity and handle jumping
     if (sphere.position.y > 1) {
-        velocity.y += gravity * delta * 5; // Apply gravity when in the air
+        velocity.y += gravity * delta; // Apply gravity when in the air
     } else {
         sphere.position.y = 1;
         velocity.y = 0;
         isJumping = false;
     }
-    sphere.position.y += velocity.y * delta * 5;
+    sphere.position.y += velocity.y * delta;
 
     // Update sphere bounding box
     sphereBox.setFromObject(sphere);
