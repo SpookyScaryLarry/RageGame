@@ -1,9 +1,10 @@
 let scene, camera, renderer, sphere, ground, obstacles = [];
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let sphereVelocity = new THREE.Vector3();
-let obstacleBoxes = [];
-let sphereBox;
-let speed = 5; // Movement speed of the sphere
+let jump = false, velocity = new THREE.Vector3();
+let sphereBox, obstacleBoxes = [];
+const speed = 5; // Movement speed of the sphere
+const gravity = -9.8; // Gravity effect
+const jumpForce = 5; // Initial force applied for jumping
 
 init();
 animate();
@@ -71,14 +72,29 @@ function init() {
 function animate() {
     requestAnimationFrame(animate);
 
-    // Move the sphere
     const delta = 0.016; // 60 FPS
     const moveDistance = speed * delta;
 
+    // Handle movement
     if (moveForward) sphere.position.z -= moveDistance;
     if (moveBackward) sphere.position.z += moveDistance;
     if (moveLeft) sphere.position.x -= moveDistance;
     if (moveRight) sphere.position.x += moveDistance;
+
+    // Apply gravity and handle jumping
+    if (!jump) {
+        velocity.y += gravity * delta;
+    } else {
+        velocity.y = jumpForce; // Apply jump force
+        jump = false;
+    }
+    sphere.position.y += velocity.y * delta;
+
+    // Collision with the ground
+    if (sphere.position.y <= 1) {
+        sphere.position.y = 1;
+        velocity.y = 0;
+    }
 
     // Update sphere bounding box
     sphereBox.setFromObject(sphere);
@@ -119,6 +135,11 @@ function onKeyDown(event) {
             break;
         case 'KeyD':
             moveRight = true;
+            break;
+        case 'Space':
+            if (sphere.position.y <= 1) { // Can only jump if on the ground
+                jump = true;
+            }
             break;
     }
 }
