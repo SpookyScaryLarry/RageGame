@@ -5,6 +5,7 @@ let prevTime = performance.now();
 let velocityVec = new THREE.Vector3();
 let direction = new THREE.Vector3();
 let ballBox, obstacleBoxes = [];
+let cameraOffset = new THREE.Vector3(10, 5, 10); // Initial camera offset
 
 init();
 animate();
@@ -15,8 +16,7 @@ function init() {
 
     // Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 10;
-    camera.position.y = 5;
+    camera.position.copy(ball ? ball.position.clone().add(cameraOffset) : new THREE.Vector3(10, 5, 10));
     camera.lookAt(0, 1, 0);
 
     // Renderer
@@ -119,10 +119,9 @@ function animate() {
         }
     }
 
-    // Camera remains in a fixed position
-    camera.position.x = 0;
-    camera.position.y = 5;
-    camera.position.z = 10;
+    // Update camera position based on ball position and fixed offset
+    const ballPosition = ball.position.clone();
+    camera.position.copy(ballPosition.add(cameraOffset));
     camera.lookAt(ball.position);
 
     renderer.render(scene, camera);
@@ -136,13 +135,13 @@ function onKeyDown(event) {
             moveForward = true;
             break;
         case 'KeyA':
-            moveRight = true; // Reversed
+            moveLeft = true;
             break;
         case 'KeyS':
             moveBackward = true;
             break;
         case 'KeyD':
-            moveLeft = true; // Reversed
+            moveRight = true;
             break;
         case 'Space':
             if (!jump) {
@@ -159,13 +158,13 @@ function onKeyUp(event) {
             moveForward = false;
             break;
         case 'KeyA':
-            moveRight = false; // Reversed
+            moveLeft = false;
             break;
         case 'KeyS':
             moveBackward = false;
             break;
         case 'KeyD':
-            moveLeft = false; // Reversed
+            moveRight = false;
             break;
     }
 }
