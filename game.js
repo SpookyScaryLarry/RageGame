@@ -84,13 +84,13 @@ function animate() {
 
     // Apply gravity and handle jumping
     if (sphere.position.y > 1) {
-        velocity.y += gravity * delta; // Apply gravity when in the air
+        velocity.y += gravity * delta * 5; // Apply gravity when in the air
     } else {
         sphere.position.y = 1;
         velocity.y = 0;
         isJumping = false;
     }
-    sphere.position.y += velocity.y * delta;
+    sphere.position.y += velocity.y * delta * 5;
 
     // Update sphere bounding box
     sphereBox.setFromObject(sphere);
