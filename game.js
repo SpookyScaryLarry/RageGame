@@ -5,7 +5,7 @@ let prevTime = performance.now();
 let velocityVec = new THREE.Vector3();
 let direction = new THREE.Vector3();
 let ballBox, obstacleBoxes = [];
-let cameraOffset = new THREE.Vector3(10, 5, 10); // Initial camera offset
+let cameraRotation = new THREE.Euler(); // To store camera rotation
 
 init();
 animate();
@@ -16,8 +16,9 @@ function init() {
 
     // Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.copy(ball ? ball.position.clone().add(cameraOffset) : new THREE.Vector3(10, 5, 10));
-    camera.lookAt(0, 1, 0);
+    camera.position.set(0, 5, 10);
+    cameraRotation.set(0, 0, 0);
+    camera.rotation.copy(cameraRotation);
 
     // Renderer
     renderer = new THREE.WebGLRenderer();
@@ -83,6 +84,18 @@ function animate() {
     const time = performance.now();
     const delta = (time - prevTime) / 1000;
 
+    // Update camera position based on input
+    const speed = 10 * delta;
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+    const cameraRight = new THREE.Vector3().crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0));
+
+    if (moveForward) camera.position.addScaledVector(cameraDirection, speed);
+    if (moveBackward) camera.position.addScaledVector(cameraDirection.negate(), speed);
+    if (moveLeft) camera.position.addScaledVector(cameraRight.negate(), speed);
+    if (moveRight) camera.position.addScaledVector(cameraRight, speed);
+
+    // Update ball position and collision
     velocityVec.x -= velocityVec.x * 10.0 * delta;
     velocityVec.z -= velocityVec.z * 10.0 * delta;
 
@@ -119,10 +132,8 @@ function animate() {
         }
     }
 
-    // Update camera position based on ball position and fixed offset
-    const ballPosition = ball.position.clone();
-    camera.position.copy(ballPosition.add(cameraOffset));
-    camera.lookAt(ball.position);
+    // Update camera rotation
+    camera.rotation.copy(cameraRotation);
 
     renderer.render(scene, camera);
 
@@ -171,7 +182,10 @@ function onKeyUp(event) {
 
 function onMouseMove(event) {
     const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-    camera.rotation.y -= movementX * 0.002;
+    const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+    cameraRotation.y -= movementX * 0.002;
+    cameraRotation.x -= movementY * 0.002;
+    cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotation.x)); // Clamp vertical rotation
 }
 
 function onWindowResize() {
