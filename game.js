@@ -23,6 +23,9 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    // Handle window resize
+    window.addEventListener('resize', onWindowResize, false);
+
     // Light
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(5, 10, 7.5);
@@ -150,4 +153,10 @@ function onKeyUp(event) {
 function onMouseMove(event) {
     const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
     camera.rotation.y -= movementX * 0.002;
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 }
